@@ -3,6 +3,10 @@ main.py – Flask application entry point for the Mock Interview AI platform.
 """
 
 import os
+from dotenv import load_dotenv
+
+load_dotenv()  # Loads variables from .env into os.environ
+
 from flask import Flask, jsonify, request, send_from_directory, Response
 from flask_cors import CORS
 
