@@ -8,6 +8,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
   <style>
     /* ============================================================
        Design Tokens
@@ -613,12 +616,28 @@
 
     @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 
-    #webcam-feed {
+    .video-container {
+      position: relative;
       width: 100%;
-      display: block;
       aspect-ratio: 4/3;
-      object-fit: cover;
       background: #0a0c18;
+    }
+
+    #webcam {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+
+    #output_canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transform: scaleX(-1);
+      pointer-events: none;
     }
 
     /* Tips card */
@@ -783,7 +802,7 @@
     @media (max-width: 860px) {
       .interview-layout { flex-direction: column; }
       .interview-sidebar { width: 100%; }
-      #webcam-feed { max-height: 220px; }
+      .video-container { max-height: 220px; }
     }
 
     @media (max-width: 480px) {
@@ -944,12 +963,10 @@
           <span class="webcam-title">📹 Behavioral Analysis</span>
           <span class="live-dot">LIVE</span>
         </div>
-        <img
-          id="webcam-feed"
-          src="/video_feed"
-          alt="Live webcam feed with head pose detection"
-          loading="lazy"
-        />
+        <div class="video-container">
+          <video id="webcam" autoplay playsinline></video>
+          <canvas id="output_canvas"></canvas>
+        </div>
       </div>
 
       <div class="tips-card">

@@ -371,19 +371,34 @@
 // Report page – fetch and render interview data
 // ============================================================
 
-const SESSION_ID = (() => {
-  const parts = window.location.pathname.split('/');
-  return parts[parts.length - 1];
-})();
-
-const API_BASE = '';
-
 async function loadReport() {
   try {
-    const res = await fetch(`${API_BASE}/api/get_report/${SESSION_ID}`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-    renderReport(data);
+    const sessionReportStr = localStorage.getItem("sessionReport");
+    if (!sessionReportStr) throw new Error("No session report found in LocalStorage.");
+    const sessionReport = JSON.parse(sessionReportStr);
+    
+    // Map the new client-side state format to the existing UI's expected format
+    const mappedData = {
+      interview: {
+        role: sessionReport.role,
+        skills: sessionReport.skills,
+        id: "Vercel Stateless Client",
+        created_at: sessionReport.date
+      },
+      summary: {
+        average_score: sessionReport.overall_score || 0,
+        total_questions: sessionReport.evaluations.length || 0
+      },
+      answers: sessionReport.evaluations.map(e => ({
+        score: e.score,
+        question_text: e.question,
+        answer_text: e.answer,
+        question_type: e.type,
+        feedback: e.feedback
+      }))
+    };
+    
+    renderReport(mappedData);
   } catch (err) {
     console.error('Failed to load report:', err);
     showError();

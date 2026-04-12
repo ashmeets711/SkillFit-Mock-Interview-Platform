@@ -1,38 +1,41 @@
 /**
- * interview.js – Main frontend logic for the Mock Interview AI platform.
- *
- * Depends on: SpeechService (speech.js loaded first)
+ * interview.js – Main frontend logic for Vercel Deployment.
+ * Stateless backend integration, Client-side Session State, Client-side MediaPipe Vision.
  */
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Constants & state
-// ─────────────────────────────────────────────────────────────────────────────
-
-const API_BASE = '';   // same origin; Flask serves everything
-
-let sessionId        = null;
-let currentQuestion  = null;   // full question object from server
-let currentIsFollowUp = false; // true when currently displayed question is a follow-up
-let questionNum      = 1;
-let totalQuestions   = 0;
-let isRecording      = false;
-let isSubmitting     = false;
+const API_BASE = ''; 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DOM refs (resolved after DOMContentLoaded)
+// Client-side State Definition (Stateless backend architecture)
 // ─────────────────────────────────────────────────────────────────────────────
+let questionsBank     = [];
+let currentQuestion   = null;
+let currentIsFollowUp = false;
+let questionNum       = 1;
+let totalQuestions    = 0;
+let isRecording       = false;
+let isSubmitting      = false;
 
+// The full history to be displayed on the report page
+let sessionReport = {
+  role: "",
+  skills: "",
+  date: "",
+  evaluations: []
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DOM refs
+// ─────────────────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
-
-let DOM = {};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Utility helpers
 // ─────────────────────────────────────────────────────────────────────────────
-
 function showScreen(name) {
   ['start-screen', 'interview-screen', 'end-screen'].forEach(id => {
-    $(id).classList.toggle('hidden', id !== name);
+    const el = $(id);
+    if(el) el.classList.toggle('hidden', id !== name);
   });
 }
 
@@ -45,7 +48,8 @@ function showToast(msg, type = 'error') {
   const el = document.createElement('div');
   el.className = `toast toast-${type}`;
   el.textContent = msg;
-  $('toast-container').appendChild(el);
+  const container = $('toast-container');
+  if(container) container.appendChild(el);
   setTimeout(() => el.remove(), 4500);
 }
 
@@ -67,14 +71,99 @@ function typeBadgeClass(type) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// MediaPipe FaceMesh Integration (Frontend Tracking)
+// ─────────────────────────────────────────────────────────────────────────────
+let faceMesh;
+let camera;
+function initMediaPipe() {
+  const videoElement = $('webcam');
+  const canvasElement = $('output_canvas');
+  if (!videoElement || !canvasElement) return;
+
+  const canvasCtx = canvasElement.getContext('2d');
+  
+  if (typeof FaceMesh === 'undefined') {
+      console.warn("FaceMesh script not loaded correctly.");
+      return;
+  }
+
+  faceMesh = new FaceMesh({locateFile: (file) => {
+    return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+  }});
+
+  faceMesh.setOptions({
+    maxNumFaces: 1,
+    refineLandmarks: true,
+    minDetectionConfidence: 0.5,
+    minTrackingConfidence: 0.5
+  });
+
+  faceMesh.onResults((results) => {
+    canvasCtx.save();
+    canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+    
+    let poseLabel = "No face detected";
+    let color = "#0066ff";
+
+    if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+      const landmarks = results.multiFaceLandmarks[0];
+      
+      // Draw minimal face mesh lines for "tech" effect
+      drawConnectors(canvasCtx, landmarks, FACEMESH_TESSELATION, {color: '#00dc5022', lineWidth: 1});
+      drawConnectors(canvasCtx, landmarks, FACEMESH_RIGHT_EYE, {color: '#00dc50'});
+      drawConnectors(canvasCtx, landmarks, FACEMESH_LEFT_EYE, {color: '#00dc50'});
+      
+      // Heuristic Head Pose
+      const noseTip = landmarks[1];
+      const leftEye = landmarks[33];
+      const rightEye = landmarks[263];
+      
+      // Rough estimation based on nose orientation vs eyes
+      const eyeDistX = rightEye.x - leftEye.x;
+      const noseRatioX = (noseTip.x - leftEye.x) / eyeDistX;
+      const noseRatioY = noseTip.y; // 0 to 1
+
+      if (noseRatioX < 0.35) poseLabel = "Looking Right";
+      else if (noseRatioX > 0.65) poseLabel = "Looking Left";
+      else if (noseRatioY < 0.40) poseLabel = "Looking Up";
+      else if (noseRatioY > 0.65) poseLabel = "Looking Down";
+      else {
+        poseLabel = "Forward ✓";
+        color = "#00dc50"; // Green
+      }
+    }
+    
+    const plabel = $('pose-label');
+    if (plabel) {
+        plabel.textContent = `Head Pose: ${poseLabel}`;
+        plabel.style.color = color;
+    }
+    canvasCtx.restore();
+  });
+
+  camera = new Camera(videoElement, {
+    onFrame: async () => {
+      // scale canvas to match video element
+      canvasElement.width = videoElement.videoWidth;
+      canvasElement.height = videoElement.videoHeight;
+      await faceMesh.send({image: videoElement});
+    },
+    width: 640,
+    height: 480
+  });
+  camera.start();
+}
+
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Roles
 // ─────────────────────────────────────────────────────────────────────────────
-
 async function loadRoles() {
   try {
     const res  = await fetch(`${API_BASE}/api/roles`);
     const data = await res.json();
     const sel  = $('role-select');
+    if(!sel) return;
     sel.innerHTML = '<option value="" disabled selected>Choose a role…</option>';
     (data.roles || []).forEach(role => {
       const opt = document.createElement('option');
@@ -83,14 +172,13 @@ async function loadRoles() {
       sel.appendChild(opt);
     });
   } catch (err) {
-    showToast('Could not load roles from server. Is the backend running?');
+    showToast('Could not load roles. API might be asleep.');
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Interview start
 // ─────────────────────────────────────────────────────────────────────────────
-
 async function startInterview() {
   const role   = $('role-select').value;
   const skills = $('skills-input').value.trim();
@@ -98,7 +186,7 @@ async function startInterview() {
   if (!role) { showToast('Please select a role.'); return; }
   if (!skills) { showToast('Please enter at least one skill.'); return; }
 
-  setLoading(true, '🤖 Generating your personalised interview…');
+  setLoading(true, '🤖 Generating your personalised interview using LLM…');
   $('start-btn').disabled = true;
 
   try {
@@ -109,45 +197,52 @@ async function startInterview() {
     });
 
     const data = await res.json();
-
     if (!res.ok) {
       showToast(data.error || 'Failed to start interview.');
       return;
     }
 
-    sessionId       = data.session_id;
-    totalQuestions  = data.progress?.total || 9;
-    questionNum     = 1;
+    // Save state completely locally
+    questionsBank  = data.questions;
+    totalQuestions = questionsBank.length;
+    questionNum    = 1;
+    
+    sessionReport = {
+        role: role,
+        skills: skills,
+        date: new Date().toISOString(),
+        evaluations: []
+    };
 
     setLoading(false);
     showScreen('interview-screen');
-    displayQuestion(data.question, data.progress);
+    
+    // Boot up MediaPipe camera now that we are on the interview screen
+    initMediaPipe();
+    
+    displayQuestion(questionsBank[0]);
 
   } catch (err) {
     showToast('Network error. Make sure the backend is running.');
     console.error(err);
   } finally {
     setLoading(false);
-    $('start-btn').disabled = false;
+    $('start-btn').disabled = false; // re-enable if errored
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Question display
 // ─────────────────────────────────────────────────────────────────────────────
-
-function displayQuestion(question, progress) {
+function displayQuestion(question) {
   currentQuestion   = question;
   currentIsFollowUp = (question.type === 'follow_up');
 
-  // Progress
-  if (progress) {
-    totalQuestions = progress.total;
-    const pct = ((progress.current - 1) / progress.total) * 100;
-    $('progress-fill').style.width = `${pct}%`;
-    $('progress-label').textContent = `Question ${progress.current} / ${progress.total}`;
-    $('question-number').textContent = `#${String(progress.current).padStart(2, '0')}`;
-  }
+  // Update Progress UI
+  const pct = ((questionNum - 1) / totalQuestions) * 100;
+  $('progress-fill').style.width = `${pct}%`;
+  $('progress-label').textContent = `Question ${questionNum} / ${totalQuestions}`;
+  $('question-number').textContent = `#${String(questionNum).padStart(2, '0')}`;
 
   // Type badge
   const typeBadgeEl = $('q-type-badge');
@@ -173,7 +268,6 @@ function displayQuestion(question, progress) {
       span.textContent = kw;
       kwRow.appendChild(span);
     });
-    // Keep keywords hidden until answer is submitted
     kwRow.classList.add('hidden');
   }
 
@@ -189,7 +283,6 @@ function revealKeywords() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Answer / speech
 // ─────────────────────────────────────────────────────────────────────────────
-
 function resetAnswerState() {
   isRecording = false;
   $('mic-btn').classList.remove('recording');
@@ -246,26 +339,24 @@ function onSpeechError(msg) {
 // ─────────────────────────────────────────────────────────────────────────────
 // Submit answer
 // ─────────────────────────────────────────────────────────────────────────────
-
 async function submitAnswer(answerText) {
   if (isSubmitting) return;
   isSubmitting = true;
 
-  setLoading(true, '🧠 Evaluating your answer…');
+  setLoading(true, '🧠 LLM Analyzing your answer…');
 
   try {
     const res = await fetch(`${API_BASE}/api/submit_answer`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        session_id: sessionId,
+        question: currentQuestion,
         answer: answerText,
-        is_follow_up: currentIsFollowUp,   // tells backend not to generate another follow-up
+        is_follow_up: currentIsFollowUp,
       }),
     });
 
     const data = await res.json();
-
     if (!res.ok) {
       showToast(data.error || 'Failed to submit answer.');
       return;
@@ -277,44 +368,49 @@ async function submitAnswer(answerText) {
     // Show evaluation
     if (data.evaluation) {
       displayEvaluation(data.evaluation);
+      
+      // Save locally to sessionReport array
+      sessionReport.evaluations.push({
+          question: currentQuestion.question,
+          answer: answerText,
+          score: data.evaluation.overall_score || 0,
+          feedback: data.evaluation.feedback || '',
+          type: currentQuestion.type || 'general'
+      });
     }
 
     // Decide next step with a small pause so user can read feedback
     setTimeout(() => {
-      if (data.finished) {
-        // Interview done
-        updateProgress(data.progress);
-        setTimeout(() => showEndScreen(), 1800);
-      } else if (data.question) {
+      // If a follow up was generated
+      if (data.follow_up_question) {
+        displayQuestion(data.follow_up_question);
+      } else {
+        // Proceed to next main question in array
         questionNum++;
-        updateProgress(data.progress);
-        setTimeout(() => displayQuestion(data.question, data.progress), 2200);
+        
+        if (questionNum > totalQuestions) {
+          // Finished
+          showEndScreen();
+        } else {
+          // Display next
+          displayQuestion(questionsBank[questionNum - 1]);
+        }
       }
-    }, 2500);
+    }, 2800);
 
   } catch (err) {
     console.error(err);
     showToast('Network error while submitting answer.');
   } finally {
     isSubmitting = false;
-    $('mic-btn').disabled = false;
+    if($('mic-btn')) $('mic-btn').disabled = false;
     resetAnswerState();
   }
-}
-
-function updateProgress(progress) {
-  if (!progress) return;
-  const pct = (progress.current / progress.total) * 100;
-  $('progress-fill').style.width = `${Math.min(pct, 100)}%`;
-  $('progress-label').textContent = progress.finished
-    ? `Interview Complete ✓`
-    : `Question ${progress.current} / ${progress.total}`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Evaluation display
 // ─────────────────────────────────────────────────────────────────────────────
-
 function displayEvaluation(ev) {
   const card = $('eval-card');
   card.classList.remove('hidden');
@@ -339,30 +435,38 @@ function displayEvaluation(ev) {
   card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Skip question
-// ─────────────────────────────────────────────────────────────────────────────
-
 async function skipQuestion() {
   if (isSubmitting || isRecording) return;
-  // Submit empty answer
   await submitAnswer('');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // End screen
 // ─────────────────────────────────────────────────────────────────────────────
-
 function showEndScreen() {
   $('progress-fill').style.width = '100%';
+  $('progress-label').textContent = 'Interview Complete ✓';
+  
+  // Calculate average overall score for report
+  let sum = 0;
+  sessionReport.evaluations.forEach(e => sum += e.score);
+  sessionReport.overall_score = sessionReport.evaluations.length > 0 ? (sum / sessionReport.evaluations.length) : 0;
+  
+  // Dump session report to local storage so report.html can pick it up
+  localStorage.setItem("sessionReport", JSON.stringify(sessionReport));
+
+  if (camera) {
+      camera.stop(); 
+  }
+
   showScreen('end-screen');
-  $('view-report-btn').href = `/report/${sessionId}`;
+  // the href logic in HTML will now just open /report/dummy 
+  // which loads report.html and subsequently localstorage.
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Quick-add skill tags
 // ─────────────────────────────────────────────────────────────────────────────
-
 function setupQuickTags() {
   document.querySelectorAll('#quick-tags .skill-tag').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -380,12 +484,11 @@ function setupQuickTags() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Restart
 // ─────────────────────────────────────────────────────────────────────────────
-
 function restartInterview() {
-  sessionId       = null;
-  currentQuestion = null;
-  questionNum     = 1;
-  totalQuestions  = 0;
+  questionsBank     = [];
+  currentQuestion   = null;
+  questionNum       = 1;
+  totalQuestions    = 0;
   $('progress-fill').style.width = '0%';
   $('skills-input').value = '';
   showScreen('start-screen');
@@ -394,7 +497,6 @@ function restartInterview() {
 // ─────────────────────────────────────────────────────────────────────────────
 // Bootstrap
 // ─────────────────────────────────────────────────────────────────────────────
-
 document.addEventListener('DOMContentLoaded', () => {
   // Initialise speech service
   SpeechService.init(onTranscriptUpdate, onFinalTranscript, onSpeechError);
@@ -405,7 +507,6 @@ document.addEventListener('DOMContentLoaded', () => {
   $('skip-btn').addEventListener('click', skipQuestion);
   $('restart-btn').addEventListener('click', restartInterview);
 
-  // Allow Enter key in skills input to start
   $('skills-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') startInterview();
   });
