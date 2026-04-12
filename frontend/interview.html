@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mock Interview AI — Practice Your Dream Role</title>
+  <meta name="description" content="AI-powered mock interview platform. Practice technical, behavioral, and case-study questions with real-time speech recognition and smart NLP evaluation." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ============================================================
+       Design Tokens
+    ============================================================ */
+    :root {
+      --bg-base:        #0b0e1a;
+      --bg-surface:     #111425;
+      --bg-card:        #171c35;
+      --bg-glass:       rgba(255,255,255,0.04);
+      --border-subtle:  rgba(255,255,255,0.07);
+      --border-bright:  rgba(255,255,255,0.14);
+
+      --accent-primary: #6c63ff;
+      --accent-glow:    rgba(108,99,255,0.35);
+      --accent-hover:   #8b83ff;
+
+      --gradient-hero: linear-gradient(135deg, #6c63ff 0%, #e040fb 100%);
+      --gradient-card: linear-gradient(145deg, #1b2040 0%, #111425 100%);
+
+      --text-primary: #eef0ff;
+      --text-secondary: #8890b8;
+      --text-muted: #555e82;
+
+      --success: #22d3a0;
+      --warning: #f59e0b;
+      --error:   #f87171;
+
+      --radius-sm:  8px;
+      --radius-md:  14px;
+      --radius-lg:  22px;
+      --radius-xl:  32px;
+
+      --shadow-card: 0 8px 32px rgba(0,0,0,0.45);
+      --shadow-glow: 0 0 40px var(--accent-glow);
+    }
+
+    /* ============================================================
+       Reset + Base
+    ============================================================ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+
+    /* Animated background grid */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ============================================================
+       Utility
+    ============================================================ */
+    .hidden { display: none !important; }
+    .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
+
+    /* ============================================================
+       Navbar
+    ============================================================ */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 2rem;
+      height: 64px;
+      background: rgba(11,14,26,0.8);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .navbar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .brand-icon {
+      width: 34px;
+      height: 34px;
+      background: var(--gradient-hero);
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-size: 1rem;
+    }
+
+    .navbar-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: var(--gradient-hero);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      border: 1px solid rgba(108,99,255,0.3);
+      border-radius: 999px;
+      padding: 2px 10px;
+    }
+
+    /* ============================================================
+       Screens wrapper
+    ============================================================ */
+    .screen {
+      position: relative;
+      z-index: 1;
+      min-height: calc(100dvh - 64px);
+    }
+
+    /* ============================================================
+       START SCREEN
+    ============================================================ */
+    #start-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 4rem 1.5rem;
+      text-align: center;
+    }
+
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 18px;
+      background: rgba(108,99,255,0.12);
+      border: 1px solid rgba(108,99,255,0.25);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #a89bff;
+      margin-bottom: 1.5rem;
+      animation: fadeInDown 0.6s ease;
+    }
+
+    .hero-icon { font-size: 1rem; }
+
+    .hero-title {
+      font-size: clamp(2.2rem, 6vw, 4rem);
+      font-weight: 800;
+      line-height: 1.12;
+      letter-spacing: -1.5px;
+      margin-bottom: 1.2rem;
+      animation: fadeInDown 0.7s ease;
+    }
+
+    .hero-title .gradient-text {
+      background: var(--gradient-hero);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-subtitle {
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+      max-width: 540px;
+      line-height: 1.65;
+      margin-bottom: 3rem;
+      animation: fadeInDown 0.8s ease;
+    }
+
+    /* Setup card */
+    .setup-card {
+      width: 100%;
+      max-width: 520px;
+      background: var(--gradient-card);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-lg);
+      padding: 2.2rem;
+      box-shadow: var(--shadow-card);
+      animation: fadeInUp 0.9s ease;
+    }
+
+    .form-group { margin-bottom: 1.4rem; }
+
+    .form-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 0.55rem;
+    }
+
+    .form-control {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 1rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+
+    .form-control:focus {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(108,99,255,0.18);
+    }
+
+    select.form-control option { background: #1b2040; }
+
+    /* Skill tags */
+    .skills-hint {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-top: 0.45rem;
+    }
+
+    .tag-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 0.7rem;
+    }
+
+    .skill-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 12px;
+      background: rgba(108,99,255,0.15);
+      border: 1px solid rgba(108,99,255,0.3);
+      border-radius: 999px;
+      font-size: 0.78rem;
+      color: #a89bff;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .skill-tag:hover { background: rgba(108,99,255,0.28); }
+
+    /* ============================================================
+       Buttons
+    ============================================================ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0.78rem 1.6rem;
+      border-radius: var(--radius-md);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.22s ease;
+    }
+
+    .btn-primary {
+      background: var(--gradient-hero);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(108,99,255,0.4);
+      width: 100%;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(108,99,255,0.55);
+    }
+
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-primary:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border-bright);
+      color: var(--text-primary);
+    }
+
+    .btn-outline:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+
+    .btn-danger {
+      background: rgba(248,113,113,0.15);
+      border: 1px solid rgba(248,113,113,0.35);
+      color: var(--error);
+    }
+
+    .btn-danger:hover { background: rgba(248,113,113,0.25); }
+
+    /* ============================================================
+       INTERVIEW SCREEN
+    ============================================================ */
+    #interview-screen {
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem;
+      gap: 1.2rem;
+    }
+
+    /* Progress bar */
+    .progress-bar-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .progress-label {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      min-width: 90px;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 6px;
+      background: var(--border-subtle);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--gradient-hero);
+      border-radius: inherit;
+      transition: width 0.5s ease;
+      width: 0%;
+    }
+
+    /* Main interview layout */
+    .interview-layout {
+      display: flex;
+      gap: 1.2rem;
+      align-items: flex-start;
+    }
+
+    /* Left: question + controls */
+    .interview-main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1.2rem;
+    }
+
+    /* Question card */
+    .question-card {
+      background: var(--gradient-card);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      box-shadow: var(--shadow-card);
+    }
+
+    .question-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.2rem;
+    }
+
+    .q-type-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      padding: 4px 12px;
+      border-radius: 999px;
+    }
+
+    .badge-technical   { background: rgba(108,99,255,0.2); color: #a89bff; border: 1px solid rgba(108,99,255,0.3); }
+    .badge-behavioral  { background: rgba(34,211,160,0.15); color: var(--success); border: 1px solid rgba(34,211,160,0.25); }
+    .badge-case_study  { background: rgba(245,158,11,0.15); color: var(--warning); border: 1px solid rgba(245,158,11,0.25); }
+    .badge-follow_up   { background: rgba(248,113,113,0.15); color: var(--error); border: 1px solid rgba(248,113,113,0.25); }
+    .badge-general     { background: var(--bg-glass); color: var(--text-secondary); border: 1px solid var(--border-subtle); }
+
+    .question-number {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    #question-text {
+      font-size: 1.18rem;
+      font-weight: 500;
+      line-height: 1.65;
+      color: var(--text-primary);
+      min-height: 60px;
+    }
+
+    /* Keywords */
+    .keywords-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 1.2rem;
+    }
+
+    .keyword-pill {
+      font-size: 0.74rem;
+      padding: 3px 10px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border-subtle);
+      border-radius: 999px;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Controls card */
+    .controls-card {
+      background: var(--gradient-card);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem 2rem;
+      box-shadow: var(--shadow-card);
+    }
+
+    .controls-header {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 1rem;
+    }
+
+    .controls-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Mic button with pulse */
+    .btn-mic {
+      background: linear-gradient(135deg, #6c63ff, #e040fb);
+      color: #fff;
+      border: none;
+      padding: 0.82rem 1.8rem;
+      border-radius: var(--radius-md);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.22s;
+      position: relative;
+    }
+
+    .btn-mic:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(108,99,255,0.5); }
+
+    .btn-mic.recording {
+      background: linear-gradient(135deg, #f87171, #e040fb);
+      animation: pulseGlow 1.5s infinite;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 12px rgba(248,113,113,0.4); }
+      50%       { box-shadow: 0 0 30px rgba(248,113,113,0.75); }
+    }
+
+    /* Transcript area */
+    .transcript-area {
+      margin-top: 1rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 1rem 1.2rem;
+      min-height: 80px;
+      font-size: 0.93rem;
+      line-height: 1.6;
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    .transcript-area.active {
+      border-color: rgba(108,99,255,0.4);
+      color: var(--text-primary);
+      font-style: normal;
+    }
+
+    /* Evaluation card */
+    .eval-card {
+      background: var(--gradient-card);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem 2rem;
+      box-shadow: var(--shadow-card);
+    }
+
+    .eval-scores {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 1rem;
+    }
+
+    .score-block {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 0.9rem;
+      text-align: center;
+    }
+
+    .score-value {
+      font-size: 1.6rem;
+      font-weight: 800;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .score-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    .score-good    { color: var(--success); }
+    .score-medium  { color: var(--warning); }
+    .score-poor    { color: var(--error); }
+
+    .eval-feedback {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      padding: 0.8rem 1rem;
+      background: rgba(255,255,255,0.03);
+      border-radius: var(--radius-sm);
+      border-left: 3px solid var(--accent-primary);
+    }
+
+    /* ============================================================
+       Sidebar – webcam
+    ============================================================ */
+    .interview-sidebar {
+      width: 300px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .webcam-card {
+      background: var(--gradient-card);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+    }
+
+    .webcam-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.8rem 1rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .webcam-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .live-dot {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.72rem;
+      color: var(--success);
+    }
+
+    .live-dot::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      background: var(--success);
+      border-radius: 50%;
+      animation: blink 1.2s infinite;
+    }
+
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    #webcam-feed {
+      width: 100%;
+      display: block;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      background: #0a0c18;
+    }
+
+    /* Tips card */
+    .tips-card {
+      background: var(--gradient-card);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-lg);
+      padding: 1.2rem;
+    }
+
+    .tips-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      margin-bottom: 0.8rem;
+    }
+
+    .tip-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.55rem;
+      line-height: 1.5;
+    }
+
+    .tip-icon { flex-shrink: 0; font-size: 0.9rem; }
+
+    /* ============================================================
+       END SCREEN
+    ============================================================ */
+    #end-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 5rem 1.5rem;
+    }
+
+    .end-icon {
+      font-size: 4rem;
+      margin-bottom: 1.5rem;
+      animation: bounceIn 0.6s ease;
+    }
+
+    @keyframes bounceIn {
+      0%   { transform: scale(0.3); opacity: 0; }
+      50%  { transform: scale(1.1); }
+      100% { transform: scale(1);   opacity: 1; }
+    }
+
+    .end-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      margin-bottom: 0.8rem;
+    }
+
+    .end-subtitle {
+      color: var(--text-secondary);
+      margin-bottom: 2.5rem;
+      font-size: 1rem;
+      line-height: 1.65;
+    }
+
+    .end-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .end-buttons .btn {
+      min-width: 180px;
+    }
+
+    /* ============================================================
+       Loading / Spinner
+    ============================================================ */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 300;
+      background: rgba(11,14,26,0.88);
+      backdrop-filter: blur(10px);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.2rem;
+    }
+
+    .spinner {
+      width: 52px;
+      height: 52px;
+      border: 4px solid var(--border-subtle);
+      border-top-color: var(--accent-primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .loading-text {
+      font-size: 1rem;
+      color: var(--text-secondary);
+    }
+
+    /* ============================================================
+       Toast
+    ============================================================ */
+    #toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 400;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .toast {
+      background: var(--bg-card);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-md);
+      padding: 0.85rem 1.2rem;
+      font-size: 0.88rem;
+      color: var(--text-primary);
+      box-shadow: var(--shadow-card);
+      animation: slideInRight 0.3s ease;
+      max-width: 320px;
+    }
+
+    .toast-error { border-left: 3px solid var(--error); }
+    .toast-success { border-left: 3px solid var(--success); }
+
+    @keyframes slideInRight {
+      from { transform: translateX(100%); opacity: 0; }
+      to   { transform: translateX(0);   opacity: 1; }
+    }
+
+    /* ============================================================
+       Animations
+    ============================================================ */
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ============================================================
+       Responsive
+    ============================================================ */
+    @media (max-width: 860px) {
+      .interview-layout { flex-direction: column; }
+      .interview-sidebar { width: 100%; }
+      #webcam-feed { max-height: 220px; }
+    }
+
+    @media (max-width: 480px) {
+      .eval-scores { grid-template-columns: 1fr 1fr; }
+      .controls-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ======================================================
+  Navbar
+====================================================== -->
+<nav class="navbar" role="navigation" aria-label="Main navigation">
+  <div class="navbar-brand">
+    <div class="brand-icon">🤖</div>
+    Mock Interview AI
+  </div>
+  <span class="navbar-badge">Powered by Groq LLaMA 3</span>
+</nav>
+
+<!-- ======================================================
+  Loading Overlay
+====================================================== -->
+<div class="loading-overlay hidden" id="loading-overlay" role="status" aria-live="polite">
+  <div class="spinner"></div>
+  <p class="loading-text" id="loading-text">Generating your personalised interview…</p>
+</div>
+
+<!-- ======================================================
+  Toast Container
+====================================================== -->
+<div id="toast-container" aria-live="assertive"></div>
+
+<!-- ======================================================
+  START SCREEN
+====================================================== -->
+<section class="screen" id="start-screen" aria-label="Interview setup">
+  <div class="hero-pill">
+    <span class="hero-icon">✨</span>
+    AI-Powered Interview Practice
+  </div>
+
+  <h1 class="hero-title">
+    Ace Your Next<br/>
+    <span class="gradient-text">Technical Interview</span>
+  </h1>
+
+  <p class="hero-subtitle">
+    Practice with a real-time AI interviewer that generates tailored questions,
+    evaluates your answers with NLP, and gives instant feedback — all in your browser.
+  </p>
+
+  <div class="setup-card" role="form" aria-label="Interview configuration">
+    <div class="form-group">
+      <label class="form-label" for="role-select">Target Role</label>
+      <select class="form-control" id="role-select" aria-required="true">
+        <option value="" disabled selected>Loading roles…</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="skills-input">Your Key Skills</label>
+      <input
+        class="form-control"
+        type="text"
+        id="skills-input"
+        placeholder="e.g. Django, AWS, Docker, PostgreSQL"
+        aria-required="true"
+        aria-describedby="skills-hint"
+      />
+      <p class="skills-hint" id="skills-hint">Comma-separated. Questions will be tailored to these skills.</p>
+
+      <!-- Quick-add tags -->
+      <div class="tag-row" id="quick-tags" aria-label="Quick skill suggestions">
+        <button class="skill-tag" type="button" data-skill="Python">+ Python</button>
+        <button class="skill-tag" type="button" data-skill="Django">+ Django</button>
+        <button class="skill-tag" type="button" data-skill="AWS">+ AWS</button>
+        <button class="skill-tag" type="button" data-skill="Docker">+ Docker</button>
+        <button class="skill-tag" type="button" data-skill="React">+ React</button>
+        <button class="skill-tag" type="button" data-skill="PostgreSQL">+ PostgreSQL</button>
+        <button class="skill-tag" type="button" data-skill="Redis">+ Redis</button>
+        <button class="skill-tag" type="button" data-skill="Kubernetes">+ Kubernetes</button>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="start-btn" type="button" aria-label="Start interview">
+      <span>🚀</span> Start Interview
+    </button>
+  </div>
+</section>
+
+<!-- ======================================================
+  INTERVIEW SCREEN
+====================================================== -->
+<section class="screen hidden" id="interview-screen" aria-label="Active interview">
+  <!-- Progress -->
+  <div class="progress-bar-wrap" role="progressbar" aria-label="Interview progress">
+    <span class="progress-label" id="progress-label">Question 1 / ?</span>
+    <div class="progress-track">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <div class="interview-layout">
+    <!-- Main column -->
+    <div class="interview-main">
+      <!-- Question card -->
+      <div class="question-card">
+        <div class="question-meta">
+          <span class="q-type-badge badge-general" id="q-type-badge">General</span>
+          <span class="question-number" id="question-number">#01</span>
+        </div>
+        <p id="question-text" aria-live="polite">Loading question…</p>
+        <div class="keywords-row hidden" id="keywords-row" aria-label="Expected keywords"></div>
+      </div>
+
+      <!-- Controls card -->
+      <div class="controls-card">
+        <p class="controls-header">🎙 Your Answer</p>
+        <div class="controls-row">
+          <button class="btn-mic" id="mic-btn" type="button" aria-label="Start recording answer">
+            <span id="mic-icon">🎙</span>
+            <span id="mic-label">Start Answering</span>
+          </button>
+          <button class="btn btn-outline" id="skip-btn" type="button">Skip Question</button>
+        </div>
+        <p class="transcript-area" id="transcript-area" aria-live="polite">
+          Click "Start Answering" then speak your response…
+        </p>
+      </div>
+
+      <!-- Evaluation card (shown after each answer) -->
+      <div class="eval-card hidden" id="eval-card" aria-label="Answer evaluation">
+        <p class="controls-header">📊 Evaluation</p>
+        <div class="eval-scores">
+          <div class="score-block">
+            <div class="score-value" id="eval-overall">—</div>
+            <div class="score-label">Overall</div>
+          </div>
+          <div class="score-block">
+            <div class="score-value" id="eval-relevance">—</div>
+            <div class="score-label">Relevance</div>
+          </div>
+          <div class="score-block">
+            <div class="score-value" id="eval-keywords">—</div>
+            <div class="score-label">Keywords</div>
+          </div>
+        </div>
+        <p class="eval-feedback" id="eval-feedback"></p>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="interview-sidebar" aria-label="Webcam and tips">
+      <div class="webcam-card">
+        <div class="webcam-header">
+          <span class="webcam-title">📹 Behavioral Analysis</span>
+          <span class="live-dot">LIVE</span>
+        </div>
+        <img
+          id="webcam-feed"
+          src="/video_feed"
+          alt="Live webcam feed with head pose detection"
+          loading="lazy"
+        />
+      </div>
+
+      <div class="tips-card">
+        <p class="tips-title">💡 Tips</p>
+        <div class="tip-item"><span class="tip-icon">👀</span> Look directly at the camera to show engagement.</div>
+        <div class="tip-item"><span class="tip-icon">🎯</span> Use technical keywords relevant to the question.</div>
+        <div class="tip-item"><span class="tip-icon">📝</span> Structure answers: Situation → Action → Result.</div>
+        <div class="tip-item"><span class="tip-icon">⏱</span> Aim for 60–90 seconds per answer.</div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+<!-- ======================================================
+  END SCREEN
+====================================================== -->
+<section class="screen hidden" id="end-screen" aria-label="Interview complete">
+  <div class="end-icon">🎉</div>
+  <h2 class="end-title">Interview Complete!</h2>
+  <p class="end-subtitle">
+    Great job completing the mock interview.<br/>
+    Review your detailed performance report below.
+  </p>
+  <div class="end-buttons">
+    <a class="btn btn-primary" id="view-report-btn" href="#" role="button">
+      <span>📊</span> View Full Report
+    </a>
+    <button class="btn btn-outline" id="restart-btn" type="button">
+      <span>🔄</span> Start New Interview
+    </button>
+  </div>
+</section>
+
+<script src="/js/speech.js"></script>
+<script src="/js/interview.js"></script>
+</body>
+</html>

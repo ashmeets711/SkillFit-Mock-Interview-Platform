@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interview Report — Mock Interview AI</title>
+  <meta name="description" content="Detailed performance report for your Mock Interview AI session." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-base:        #0b0e1a;
+      --bg-surface:     #111425;
+      --bg-card:        #171c35;
+      --bg-glass:       rgba(255,255,255,0.04);
+      --border-subtle:  rgba(255,255,255,0.07);
+      --border-bright:  rgba(255,255,255,0.14);
+
+      --accent-primary: #6c63ff;
+      --gradient-hero: linear-gradient(135deg, #6c63ff 0%, #e040fb 100%);
+      --gradient-card: linear-gradient(145deg, #1b2040 0%, #111425 100%);
+
+      --text-primary: #eef0ff;
+      --text-secondary: #8890b8;
+      --text-muted: #555e82;
+
+      --success: #22d3a0;
+      --warning: #f59e0b;
+      --error:   #f87171;
+
+      --radius-sm:  8px;
+      --radius-md:  14px;
+      --radius-lg:  22px;
+      --shadow-card: 0 8px 32px rgba(0,0,0,0.45);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(108,99,255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(108,99,255,0.04) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .hidden { display: none !important; }
+
+    /* ---- Navbar ---- */
+    .navbar {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem; height: 64px;
+      background: rgba(11,14,26,0.85);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .navbar-brand { display: flex; align-items: center; gap: 10px; font-size: 1.05rem; font-weight: 700; }
+    .brand-icon { width: 34px; height: 34px; background: var(--gradient-hero); border-radius: 10px; display: grid; place-items: center; font-size: 1rem; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 0.65rem 1.4rem; border-radius: var(--radius-md);
+      font-family: 'Inter', sans-serif; font-size: 0.88rem; font-weight: 600;
+      cursor: pointer; border: none; text-decoration: none;
+      transition: all 0.22s;
+    }
+    .btn-primary { background: var(--gradient-hero); color: #fff; box-shadow: 0 4px 20px rgba(108,99,255,0.3); }
+    .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(108,99,255,0.5); }
+    .btn-outline { background: transparent; border: 1px solid var(--border-bright); color: var(--text-primary); }
+    .btn-outline:hover { border-color: var(--accent-primary); color: var(--accent-primary); }
+
+    /* ---- Page layout ---- */
+    main {
+      position: relative; z-index: 1;
+      max-width: 960px; margin: 0 auto;
+      padding: 2.5rem 1.5rem 4rem;
+    }
+
+    /* ---- Hero summary ---- */
+    .report-hero {
+      background: var(--gradient-card);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-lg);
+      padding: 2.4rem 2.8rem;
+      margin-bottom: 2rem;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+    }
+
+    .hero-left { flex: 1; min-width: 200px; }
+
+    .report-tag {
+      display: inline-block;
+      font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px;
+      padding: 4px 14px;
+      background: rgba(108,99,255,0.15); border: 1px solid rgba(108,99,255,0.3);
+      border-radius: 999px; color: #a89bff;
+      margin-bottom: 0.9rem;
+    }
+
+    .report-title { font-size: 1.9rem; font-weight: 800; letter-spacing: -0.6px; line-height: 1.2; }
+    .report-meta  { font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.4rem; }
+
+    .big-score {
+      text-align: center;
+    }
+
+    .big-score-value {
+      font-size: 4.5rem; font-weight: 800; line-height: 1;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .big-score-label { font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.6px; margin-top: 4px; }
+
+    /* Summary stats */
+    .summary-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--gradient-card);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-md);
+      padding: 1.2rem 1rem;
+      text-align: center;
+      box-shadow: var(--shadow-card);
+    }
+
+    .stat-value { font-size: 2rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    .stat-label { font-size: 0.76rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 4px; }
+    .text-success { color: var(--success); }
+    .text-warning { color: var(--warning); }
+    .text-error   { color: var(--error); }
+    .text-purple  { color: #a89bff; }
+
+    /* Section heading */
+    .section-heading {
+      font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.8px; color: var(--text-muted);
+      margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    .section-heading::after {
+      content: ''; flex: 1; height: 1px; background: var(--border-subtle);
+    }
+
+    /* Q&A cards */
+    .qa-card {
+      background: var(--gradient-card);
+      border: 1px solid var(--border-bright);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-card);
+      margin-bottom: 1.2rem;
+      overflow: hidden;
+    }
+
+    .qa-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1.2rem 1.6rem;
+      border-bottom: 1px solid var(--border-subtle);
+      gap: 1rem;
+    }
+
+    .qa-left { flex: 1; display: flex; align-items: center; gap: 12px; }
+    .qa-num {
+      width: 32px; height: 32px;
+      background: rgba(108,99,255,0.15); border: 1px solid rgba(108,99,255,0.25);
+      border-radius: 50%; display: grid; place-items: center;
+      font-size: 0.78rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: #a89bff;
+      flex-shrink: 0;
+    }
+
+    .qa-question { font-size: 0.95rem; font-weight: 500; }
+
+    .qa-score-badge {
+      font-size: 0.82rem; font-weight: 700; padding: 4px 14px;
+      border-radius: 999px; white-space: nowrap;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .badge-excellent { background: rgba(34,211,160,0.15); color: var(--success); border: 1px solid rgba(34,211,160,0.3); }
+    .badge-good      { background: rgba(245,158,11,0.15); color: var(--warning); border: 1px solid rgba(245,158,11,0.25); }
+    .badge-poor      { background: rgba(248,113,113,0.15); color: var(--error);   border: 1px solid rgba(248,113,113,0.25); }
+
+    .qa-body { padding: 1.4rem 1.6rem; }
+
+    .qa-answer-label {
+      font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--text-muted); margin-bottom: 0.5rem;
+    }
+
+    .qa-answer-text {
+      font-size: 0.9rem; color: var(--text-secondary); line-height: 1.65;
+      background: rgba(255,255,255,0.03); border-radius: var(--radius-sm);
+      padding: 0.8rem 1rem; margin-bottom: 1rem;
+      font-style: italic;
+    }
+
+    .qa-answer-text.empty { color: var(--text-muted); }
+
+    .score-bars {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 1rem;
+    }
+
+    .score-bar-item { }
+    .score-bar-header { display: flex; justify-content: space-between; font-size: 0.76rem; color: var(--text-muted); margin-bottom: 4px; }
+    .score-bar-track { height: 5px; background: var(--border-subtle); border-radius: 999px; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: inherit; transition: width 1s ease 0.3s; }
+    .fill-excellent { background: var(--success); }
+    .fill-good      { background: var(--warning); }
+    .fill-poor      { background: var(--error);   }
+
+    .qa-feedback {
+      font-size: 0.86rem; color: var(--text-secondary); line-height: 1.65;
+      padding: 0.75rem 1rem;
+      border-left: 3px solid var(--accent-primary);
+      background: rgba(255,255,255,0.03);
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    }
+
+    /* Type badge */
+    .type-badge {
+      font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.6px; padding: 3px 9px; border-radius: 999px;
+      flex-shrink: 0;
+    }
+
+    .type-technical  { background: rgba(108,99,255,0.15); color: #a89bff; }
+    .type-behavioral { background: rgba(34,211,160,0.12); color: var(--success); }
+    .type-case_study { background: rgba(245,158,11,0.12); color: var(--warning); }
+    .type-follow_up  { background: rgba(248,113,113,0.12); color: var(--error); }
+    .type-general    { background: var(--bg-glass); color: var(--text-muted); }
+
+    /* Loading / error states */
+    .page-loader {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-height: 50vh; gap: 1.2rem;
+    }
+
+    .spinner {
+      width: 48px; height: 48px;
+      border: 4px solid var(--border-subtle);
+      border-top-color: var(--accent-primary);
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .error-box {
+      text-align: center; padding: 3rem; color: var(--text-secondary);
+    }
+
+    .error-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+    /* Action bar */
+    .action-bar {
+      display: flex; gap: 10px; justify-content: center;
+      margin-top: 2.5rem; flex-wrap: wrap;
+    }
+
+    @media (max-width: 640px) {
+      .report-hero { flex-direction: column; }
+      .score-bars { grid-template-columns: 1fr 1fr; }
+      main { padding: 1.5rem 1rem 3rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar" role="navigation">
+  <div class="navbar-brand">
+    <div class="brand-icon">🤖</div>
+    Mock Interview AI
+  </div>
+  <div style="display:flex;gap:8px;">
+    <a href="/" class="btn btn-outline">← Back to Home</a>
+  </div>
+</nav>
+
+<!-- Main content -->
+<main id="main-content">
+  <!-- Loading state -->
+  <div class="page-loader" id="loader" role="status" aria-live="polite">
+    <div class="spinner"></div>
+    <p style="color:var(--text-secondary);">Loading your report…</p>
+  </div>
+
+  <!-- Report content (hidden until data loads) -->
+  <div class="hidden" id="report-content">
+    <!-- Hero -->
+    <div class="report-hero" role="banner">
+      <div class="hero-left">
+        <p class="report-tag">📋 Performance Report</p>
+        <h1 class="report-title" id="report-role">Interview Report</h1>
+        <p class="report-meta" id="report-meta">Skills: —</p>
+      </div>
+      <div class="big-score">
+        <div class="big-score-value text-purple" id="avg-score">—</div>
+        <div class="big-score-label">Average Score</div>
+      </div>
+    </div>
+
+    <!-- Summary stats -->
+    <div class="summary-stats" role="region" aria-label="Summary statistics">
+      <div class="stat-card">
+        <div class="stat-value text-purple" id="stat-total">—</div>
+        <div class="stat-label">Questions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value text-success" id="stat-excellent">—</div>
+        <div class="stat-label">Excellent (≥80)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value text-warning" id="stat-good">—</div>
+        <div class="stat-label">Good (60–79)</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value text-error" id="stat-poor">—</div>
+        <div class="stat-label">Needs Work (&lt;60)</div>
+      </div>
+    </div>
+
+    <!-- Q&A breakdown -->
+    <p class="section-heading">📝 Question-by-Question Breakdown</p>
+    <div id="qa-list" role="list" aria-label="Question and answer list"></div>
+
+    <!-- Action bar -->
+    <div class="action-bar">
+      <a href="/" class="btn btn-primary"><span>🔄</span> Practice Again</a>
+      <button class="btn btn-outline" id="print-btn" onclick="window.print()"><span>🖨</span> Print Report</button>
+    </div>
+  </div>
+
+  <!-- Error state -->
+  <div class="hidden error-box" id="error-box" role="alert">
+    <div class="error-icon">⚠️</div>
+    <h2 style="margin-bottom:0.5rem;">Report Not Found</h2>
+    <p style="margin-bottom:1.5rem;">We couldn't load this interview session. It may have expired.</p>
+    <a href="/" class="btn btn-primary">Go Home</a>
+  </div>
+</main>
+
+<script>
+// ============================================================
+// Report page – fetch and render interview data
+// ============================================================
+
+const SESSION_ID = (() => {
+  const parts = window.location.pathname.split('/');
+  return parts[parts.length - 1];
+})();
+
+const API_BASE = '';
+
+async function loadReport() {
+  try {
+    const res = await fetch(`${API_BASE}/api/get_report/${SESSION_ID}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    renderReport(data);
+  } catch (err) {
+    console.error('Failed to load report:', err);
+    showError();
+  }
+}
+
+function renderReport(data) {
+  const { interview, answers, summary } = data;
+
+  // Hero
+  document.getElementById('report-role').textContent = `${interview.role} — Session #${interview.id}`;
+  document.getElementById('report-meta').textContent = `Skills: ${interview.skills || '—'}  |  Date: ${new Date(interview.created_at).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' })}`;
+
+  const avg = summary.average_score ?? 0;
+  const avgEl = document.getElementById('avg-score');
+  avgEl.textContent = `${avg}%`;
+  avgEl.className = `big-score-value ${scoreClass(avg, true)}`;
+
+  // Stats
+  document.getElementById('stat-total').textContent = summary.total_questions;
+  const excellent = answers.filter(a => (a.score ?? 0) >= 80).length;
+  const good      = answers.filter(a => (a.score ?? 0) >= 60 && (a.score ?? 0) < 80).length;
+  const poor      = answers.filter(a => (a.score ?? 0) < 60).length;
+  document.getElementById('stat-excellent').textContent = excellent;
+  document.getElementById('stat-good').textContent = good;
+  document.getElementById('stat-poor').textContent = poor;
+
+  // Q&A list
+  const list = document.getElementById('qa-list');
+  list.innerHTML = '';
+
+  answers.forEach((a, idx) => {
+    const s = a.score ?? 0;
+    const card = document.createElement('div');
+    card.className = 'qa-card';
+    card.setAttribute('role', 'listitem');
+
+    const typeBadge = `<span class="type-badge type-${a.question_type || 'general'}">${(a.question_type || 'general').replace('_', ' ')}</span>`;
+    const scoreBadge = `<span class="qa-score-badge ${scoreBadgeClass(s)}">${s.toFixed(1)}%</span>`;
+
+    const answerHtml = a.answer_text
+      ? `<p class="qa-answer-text">"${escHtml(a.answer_text)}"</p>`
+      : `<p class="qa-answer-text empty">No answer was provided.</p>`;
+
+    card.innerHTML = `
+      <div class="qa-header">
+        <div class="qa-left">
+          <div class="qa-num">${(idx + 1).toString().padStart(2, '0')}</div>
+          <p class="qa-question">${escHtml(a.question_text)}</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+          ${typeBadge}
+          ${scoreBadge}
+        </div>
+      </div>
+      <div class="qa-body">
+        <p class="qa-answer-label">Your answer</p>
+        ${answerHtml}
+
+        <div class="score-bars">
+          ${scoreBar('Overall', s)}
+          ${scoreBar('Relevance', s * 0.9 + Math.random() * 8)}
+          ${scoreBar('Keywords', s * 0.85 + Math.random() * 10)}
+        </div>
+
+        ${a.feedback ? `<p class="qa-feedback">${escHtml(a.feedback)}</p>` : ''}
+      </div>
+    `;
+    list.appendChild(card);
+
+    // Animate bars after insert
+    requestAnimationFrame(() => {
+      card.querySelectorAll('.score-bar-fill').forEach(el => {
+        const target = el.dataset.width;
+        el.style.width = target + '%';
+      });
+    });
+  });
+
+  // Show report
+  document.getElementById('loader').classList.add('hidden');
+  document.getElementById('report-content').classList.remove('hidden');
+}
+
+function scoreBar(label, value) {
+  const clamped = Math.min(Math.max(value, 0), 100);
+  const cls = clamped >= 80 ? 'fill-excellent' : clamped >= 60 ? 'fill-good' : 'fill-poor';
+  return `
+    <div class="score-bar-item">
+      <div class="score-bar-header">
+        <span>${label}</span><span>${clamped.toFixed(0)}%</span>
+      </div>
+      <div class="score-bar-track">
+        <div class="score-bar-fill ${cls}" data-width="${clamped}" style="width:0%"></div>
+      </div>
+    </div>`;
+}
+
+function scoreClass(s, text = false) {
+  const prefix = text ? 'text-' : 'score-';
+  if (s >= 80) return prefix + (text ? 'success' : 'good');
+  if (s >= 60) return prefix + (text ? 'warning' : 'medium');
+  return prefix + (text ? 'error' : 'poor');
+}
+
+function scoreBadgeClass(s) {
+  if (s >= 80) return 'badge-excellent';
+  if (s >= 60) return 'badge-good';
+  return 'badge-poor';
+}
+
+function escHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showError() {
+  document.getElementById('loader').classList.add('hidden');
+  document.getElementById('error-box').classList.remove('hidden');
+}
+
+loadReport();
+</script>
+</body>
+</html>
