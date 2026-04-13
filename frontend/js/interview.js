@@ -460,8 +460,8 @@ function showEndScreen() {
   }
 
   showScreen('end-screen');
-  // the href logic in HTML will now just open /report/dummy 
-  // which loads report.html and subsequently localstorage.
+  const btn = $('view-report-btn');
+  if (btn) btn.href = '/report/stats';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
