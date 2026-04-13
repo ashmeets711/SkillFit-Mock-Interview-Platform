@@ -42,19 +42,22 @@ const SpeechService = (() => {
     };
 
     r.onresult = (event) => {
-      interimTranscript = '';
+      let finalStr = '';
+      let interimStr = '';
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
+      for (let i = 0; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
-          finalTranscript += result[0].transcript + ' ';
+          finalStr += result[0].transcript + ' ';
         } else {
-          interimTranscript += result[0].transcript;
+          interimStr += result[0].transcript;
         }
       }
 
+      finalTranscript = finalStr;
+
       // Notify caller with the combined text
-      _onUpdate(finalTranscript + interimTranscript);
+      _onUpdate(finalTranscript + interimStr);
     };
 
     r.onend = () => {
