@@ -30,14 +30,20 @@ const SpeechService = (() => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     const r = new SR();
 
-    r.continuous      = true;   // keep listening until stop() is called
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    
+    // Android Chrome has a known bug with continuous = true duplicating text.
+    r.continuous      = isAndroid ? false : true;   
     r.interimResults  = true;   // stream partial results
     r.lang            = 'en-US';
     r.maxAlternatives = 1;
 
     r.onstart = () => {
-      isListening       = true;
-      finalTranscript   = '';
+      // Don't clear transcripts if Android is just automatically restarting
+      if (!isListening) {
+        isListening       = true;
+        finalTranscript   = '';
+      }
       interimTranscript = '';
     };
 
@@ -54,13 +60,37 @@ const SpeechService = (() => {
         }
       }
 
-      finalTranscript = finalStr;
-
-      // Notify caller with the combined text
-      _onUpdate(finalTranscript + interimStr);
+      // If continuous is false (Android), event.results is only the CURRENT sentence.
+      // So we append it to our global finalTranscript manually when it becomes final.
+      if (!r.continuous) {
+          // Find newly finalized text from this specific event
+          let newFinal = '';
+          for (let i = 0; i < event.results.length; i++) {
+              if (event.results[i].isFinal) newFinal += event.results[i][0].transcript + ' ';
+          }
+          let displayFinal = finalTranscript + newFinal;
+          _onUpdate(displayFinal + interimStr);
+          // We will physically append newFinal to finalTranscript on end
+      } else {
+          finalTranscript = finalStr;
+          _onUpdate(finalTranscript + interimStr);
+      }
     };
 
     r.onend = () => {
+      if (isListening) {
+          // If we reached the end of a sentence on Android, but the user hasn't clicked stop
+          if (!r.continuous) {
+             // We need to commit the last known interim text or final text from the session
+             // before restarting.
+             finalTranscript += interimTranscript + ' ';
+             try { 
+                 r.start(); 
+                 return; // Prevent triggering onFinal yet
+             } catch(e) {}
+          }
+      }
+      
       isListening = false;
       // Only fire final if we actually got something
       _onFinal(finalTranscript.trim());
@@ -68,6 +98,12 @@ const SpeechService = (() => {
 
     r.onerror = (event) => {
       console.warn('[SpeechService] Error:', event.error);
+      
+      if (isAndroid && event.error === 'no-speech' && isListening) {
+          // Android often throws no-speech during auto-restarts, ignore it
+          return;
+      }
+      
       isListening = false;
 
       let msg = 'Speech recognition error.';
